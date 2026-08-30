@@ -2,7 +2,7 @@
 
 > **Predict. Act. Prove.** — Real-time heat compliance for outdoor construction worksites, powered by FortyGuard temperature intelligence.
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20App-orange?style=for-the-badge)](https://heat-shield-red.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20App-orange?style=for-the-badge)](https://heat-shield.up.railway.app)
 [![FortyGuard](https://img.shields.io/badge/Powered%20by-FortyGuard-red?style=for-the-badge)](https://fortyguard.com)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
@@ -10,7 +10,7 @@
 
 ## 🚀 Live Demo
 
-**[→ https://heat-shield-red.vercel.app](https://heat-shield-red.vercel.app)**
+**[→ https://heat-shield.up.railway.app](https://heat-shield.up.railway.app)**
 
 No login required. The demo runs in **replay mode** (synthetic heat data) to protect FortyGuard API quota — all features are fully functional.
 
