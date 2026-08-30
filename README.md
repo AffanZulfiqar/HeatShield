@@ -105,7 +105,7 @@ POST /mcp/call   →  direct tool call
 
 ## ⚠️ Known Limitations / What Doesn't Work Yet
 
-- **Serverless SQLite:** On Vercel the evidence ledger resets between cold starts (SQLite writes to `/tmp` which is ephemeral). A persistent deployment (Railway, Render, or a VM) retains the ledger across sessions.
+- **Evidence ledger persistence:** Deployed on Railway which has a **persistent filesystem** — the hash-chained SQLite ledger survives restarts and retains all historical readings. (Note: serverless platforms like Vercel would reset the ledger on cold starts.)
 - **Slack notifications:** `SLACK_WEBHOOK_URL` is wired but untested end-to-end in the competition build.
 - **Historical FortyGuard data:** The `station_delta` comparison fetches NWS station readings (free, no key) but the FortyGuard historical filter (`FG_FILTER_HISTORICAL=3`) depends on your plan's historical data window — not verified beyond the current reading.
 - **Mobile layout:** The UI is optimised for desktop (1024px+). Narrow screens clip the left panel.
