@@ -104,6 +104,7 @@ POST /mcp/call   →  direct tool call
 ---
 
 ## ⚠️ Known Limitations / What Doesn't Work Yet
+-**.env Toggles** Many options have been limited like polling=false and lookahead hours=0 via .env so playing around with environment is suggested to uncover new features if API credits are in abundance.
 
 - **Evidence ledger persistence:** Deployed on Railway which has a **persistent filesystem** — the hash-chained SQLite ledger survives restarts and retains all historical readings. (Note: serverless platforms like Vercel would reset the ledger on cold starts.)
 - **Slack notifications:** `SLACK_WEBHOOK_URL` is wired but untested end-to-end in the competition build.
