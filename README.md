@@ -12,7 +12,7 @@
 
 **[→ https://heat-shield.up.railway.app](https://heat-shield.up.railway.app)**
 
-No login required. The demo runs in **replay mode** (synthetic heat data) to protect FortyGuard API quota — all features are fully functional.
+Running in **live mode** on Railway — real FortyGuard temperature data for each worksite. `LOOKAHEAD_HOURS=0` is intentional to stay within the free-tier quota of 30 heatmaps/day (current reading only, no hourly forecast tasks).
 
 ---
 
@@ -24,7 +24,7 @@ Heat illness is the #1 weather-related killer of outdoor workers. HeatShield giv
 |---|---|
 | **Real-time heat map** | Pulls FortyGuard's hyperlocal temperature signal for any 200m worksite AOI |
 | **Jurisdiction compliance** | Checks OSHA, Cal/OSHA, OR-OSHA, WA L&I thresholds automatically |
-| **Forecast breach alerts** | Projects threshold crossings up to 12 hours ahead so crews can prepare |
+| **Forecast breach alerts** | Wired and functional — disabled on the live Railway deployment (`LOOKAHEAD_HOURS=0`) to stay within the 30 heatmaps/day free-tier quota |
 | **Operational heat plan** | Generates step-by-step supervisor actions (STOP / STAGE / PREPARE / MONITOR) |
 | **Evidence ledger** | Signed, hash-chained record of every reading — litigation-ready proof |
 | **MCP endpoint** | AI agent integration via Model Context Protocol (`/mcp`) |
@@ -109,7 +109,7 @@ POST /mcp/call   →  direct tool call
 - **Slack notifications:** `SLACK_WEBHOOK_URL` is wired but untested end-to-end in the competition build.
 - **Historical FortyGuard data:** The `station_delta` comparison fetches NWS station readings (free, no key) but the FortyGuard historical filter (`FG_FILTER_HISTORICAL=3`) depends on your plan's historical data window — not verified beyond the current reading.
 - **Mobile layout:** The UI is optimised for desktop (1024px+). Narrow screens clip the left panel.
-- **LOOKAHEAD_HOURS > 0:** Forecast breach alerts are fully wired but the FortyGuard free-tier quota makes multi-hour lookahead expensive; `LOOKAHEAD_HOURS=0` is the safe default.
+- **`LOOKAHEAD_HOURS=0` on live deployment:** The Railway deployment is intentionally set to `LOOKAHEAD_HOURS=0` (current temperature only, no hourly forecast tasks). The FortyGuard free tier allows 30 heatmaps/day — with 6 worksites and 6-hour polling that leaves zero headroom for forecast lookahead. Forecast breach alerts are fully wired in the code and work in replay mode; increase `LOOKAHEAD_HOURS` if you have a higher-quota plan.
 
 ---
 
