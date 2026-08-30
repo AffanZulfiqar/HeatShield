@@ -115,54 +115,74 @@ POST /mcp/call   →  direct tool call
 
 ## 🔬 Real FortyGuard API Request & Response
 
-The following is a real request+response from the FortyGuard heatmap API (TSMC Arizona Fab 21, Phoenix AZ, captured during development):
+*Site:* Maryland Parkway BRT work zone, Las Vegas, NV (36.14406, -115.13731) — federal jurisdiction (no state heat standard; General Duty Clause applies)
 
-**Request — POST `https://api.fortyguard.com/v1/heatmap`**
-```json
-{
-  "polygon_aoi": [
-    [33.5105, -112.0346],
-    [33.5105, -112.0328],
-    [33.5087, -112.0328],
-    [33.5087, -112.0346],
-    [33.5105, -112.0346]
-  ],
-  "date_time": "2026-08-28T14:00:00Z",
-  "granularity": 100,
-  "filter": 1
-}
-```
+**Request — POST `https://api.fortyguard.com/v1/heatmap`**  
 *Header:* `api-key: <redacted>`
-
-**Response**
 ```json
 {
+  "polygon_aoi": {
+    "type": "FeatureCollection",
+    "features": [{
+      "type": "Feature",
+      "properties": {},
+      "geometry": { "type": "Polygon", "coordinates": [[...]] }
+    }]
+  },
+  "date_time": { "start_date": "<3+ days back>", "start_time": "14:00", "filter_type": 1 },
+  "granularity": 100
+}
+```
+
+**Submit response**
+```json
+{
+  "error": false,
+  "status_code": 200,
+  "message": "Heatmap Submitted Successfully",
+  "data": { "activity_id": "a045e976-adbe-4769-bc24-7fdf0dd45fc9" }
+}
+```
+
+**Poll response** — GET `/v1/status/a045e976-adbe-4769-bc24-7fdf0dd45fc9` (completed after 7 polls)
+```json
+{
+  "error": false,
+  "status_code": 200,
+  "message": "Completed",
   "data": {
-    "activity_id": "fg-a8c21d94-3b7e-4a12-9f01-d5e8c3b22a47",
-    "status": "processing"
+    "activity_id": "a045e976-adbe-4769-bc24-7fdf0dd45fc9",
+    "status": "Completed",
+    "result": { "map_data": { "features": [...] } }
   }
 }
 ```
 
-**Poll — GET `https://api.fortyguard.com/v1/status/fg-a8c21d94-3b7e-4a12-9f01-d5e8c3b22a47`**
+**What our app does with it** — real output from `/api/status`
 ```json
 {
-  "data": {
-    "activity_id": "fg-a8c21d94-3b7e-4a12-9f01-d5e8c3b22a47",
-    "status": "completed",
-    "result": {
-      "tiles": [
-        { "lat": 33.5096, "lon": -112.0337, "temperature": 41.2, "units": "c" },
-        { "lat": 33.5096, "lon": -112.0328, "temperature": 42.0, "units": "c" }
-      ]
-    }
+  "site_id": "maryland-parkway-brt-01",
+  "status": "advisory",
+  "current_f": 101.8,
+  "provenance": "measured",
+  "source": "fortyguard",
+  "is_live": true,
+  "worst": {
+    "name": "Advisory: elevated risk, document controls",
+    "citation": "OSHA-NIOSH heat guidance (non-binding)",
+    "trigger_f": 95,
+    "requirements": [
+      "Increase rest frequency and observation",
+      "Record the controls actually applied, since the General Duty Clause is proved by conduct rather than by threshold"
+    ]
   }
 }
 ```
 
-*Temperature of 41.2 °C = 106.2 °F — above the Cal/OSHA High Heat threshold (100 °F). HeatShield would trigger a **HIGH HEAT** alert and generate the STOP/PROTECT heat plan for this site.*
+*A live, real FortyGuard temperature reading (101.8 °F) is pulled for the exact worksite polygon, then evaluated against jurisdiction-specific thresholds — here, federal OSHA/NIOSH advisory guidance, since Nevada has no state-level heat standard.*
 
 ---
+
 
 ## 📄 License
 
