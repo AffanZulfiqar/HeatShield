@@ -1,0 +1,76 @@
+{
+  "jurisdiction": "us-ca",
+  "name": "California (Cal/OSHA)",
+  "citation": "8 CCR \u00a73395 Heat Illness Prevention in Outdoor Places of Employment",
+  "source_url": "https://www.dir.ca.gov/title8/3395.html",
+  "metric": "temp_f",
+  "metric_note": "Cal/OSHA \u00a73395 triggers on ambient outdoor temperature, not heat index. A 2 m air temperature feed satisfies it directly.",
+  "status": "verified",
+  "verified_on": "2026-08-22",
+  "environment": "outdoor",
+  "year_round": true,
+  "thresholds": [
+    {
+      "id": "ca-3395-baseline",
+      "name": "Baseline duties (all temperatures)",
+      "severity": "baseline",
+      "citation": "8 CCR \u00a73395(c),(e),(i)",
+      "op": ">=",
+      "value_f": -100,
+      "industries": "all",
+      "clothing": "any",
+      "requirements": [
+        "Potable water sufficient for 1 quart per worker per hour, located as close as practicable to the work area",
+        "Access to shade on request at any temperature",
+        "Written Heat Illness Prevention Plan available at the worksite",
+        "Employee and supervisor training completed before heat exposure"
+      ],
+      "evidence_note": "Baseline duties are not temperature-gated. Logged once per shift to keep the record continuous."
+    },
+    {
+      "id": "ca-3395-d-shade",
+      "name": "Shade must be present and accessible",
+      "severity": "action",
+      "citation": "8 CCR \u00a73395(d)(1)",
+      "op": ">=",
+      "value_f": 80,
+      "industries": "all",
+      "clothing": "any",
+      "requirements": [
+        "Shade structures erected and open, enough to accommodate all workers on a cool-down rest at one time",
+        "Shade located as close as practicable to the work area",
+        "Preventative cool-down rest of at least 5 minutes permitted whenever a worker feels the need"
+      ],
+      "evidence_note": "Shade obligation moves from on-request to must-be-present at this threshold."
+    },
+    {
+      "id": "ca-3395-e-highheat",
+      "name": "High-heat procedures",
+      "severity": "high_heat",
+      "citation": "8 CCR \u00a73395(e)",
+      "op": ">=",
+      "value_f": 95,
+      "industries": [
+        "agriculture",
+        "construction",
+        "landscaping",
+        "oil_and_gas",
+        "transportation"
+      ],
+      "clothing": "any",
+      "requirements": [
+        "Effective observation of employees for signs and symptoms of heat illness",
+        "Effective two-way communication so any worker can contact a supervisor",
+        "Designated worker authorised to call emergency services",
+        "Pre-shift meeting reviewing high-heat procedures and encouraging water intake",
+        "Minimum 10 minute net preventative cool-down rest period every two hours (agriculture)"
+      ],
+      "evidence_note": "High-heat procedures apply only to the listed industries. This is the threshold most often disputed after a heat-illness claim."
+    }
+  ],
+  "indoor_reference": {
+    "citation": "8 CCR \u00a73396",
+    "trigger_f": 82,
+    "note": "Indoor workplaces reaching 82\u00b0F carry a parallel set of duties. Out of scope for outdoor site monitoring but noted so the pack is complete."
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "jurisdiction": "us-wa",
+  "name": "Washington (L&I)",
+  "citation": "WAC 296-62-095 Outdoor Heat Exposure",
+  "source_url": "https://lni.wa.gov/safety-health/safety-rules/chapter-pdfs/WAC296-62.pdf",
+  "metric": "temp_f",
+  "metric_note": "Washington action levels are ambient outdoor temperature and vary by the clothing a worker is required to wear.",
+  "status": "verified",
+  "verified_on": "2026-08-22",
+  "environment": "outdoor",
+  "year_round": true,
+  "year_round_note": "The July 2023 revision removed the May-September seasonal window. Requirements apply whenever the trigger is met.",
+  "thresholds": [
+    {
+      "id": "wa-action-standard",
+      "name": "Action level, standard clothing",
+      "severity": "action",
+      "citation": "WAC 296-62-09510",
+      "op": ">=",
+      "value_f": 80,
+      "industries": "all",
+      "clothing": "standard",
+      "requirements": [
+        "Sufficiently cool drinking water, 1 quart per worker per hour",
+        "Shade or other sufficient means of cooling, accessible at all times",
+        "Written Outdoor Heat Exposure Safety Program in force",
+        "Acclimatisation monitoring for new and returning workers over their first 14 days"
+      ],
+      "evidence_note": "Lowered from 89\u00b0F to 80\u00b0F effective 17 July 2023."
+    },
+    {
+      "id": "wa-action-double-layer",
+      "name": "Action level, double-layer clothing",
+      "severity": "action",
+      "citation": "WAC 296-62-09510 Table 1",
+      "op": ">=",
+      "value_f": 77,
+      "industries": "all",
+      "clothing": "double_layer",
+      "requirements": [
+        "Same water, shade and program duties as the standard action level",
+        "Applies at a lower temperature because coveralls and jackets suppress evaporative cooling"
+      ],
+      "evidence_note": "Clothing-dependent trigger. Site clothing type must be recorded for this to be defensible."
+    },
+    {
+      "id": "wa-action-non-breathing",
+      "name": "Action level, vapour-barrier clothing",
+      "severity": "action",
+      "citation": "WAC 296-62-09510 Table 1",
+      "op": ">=",
+      "value_f": 52,
+      "industries": "all",
+      "clothing": "non_breathing",
+      "requirements": [
+        "Full heat protection duties apply from 52\u00b0F for chemical-resistant suits and other vapour-barrier PPE"
+      ],
+      "evidence_note": "The lowest statutory heat trigger in any US jurisdiction."
+    },
+    {
+      "id": "wa-highheat-90",
+      "name": "High-heat procedures",
+      "severity": "high_heat",
+      "citation": "WAC 296-62-09547",
+      "op": ">=",
+      "value_f": 90,
+      "industries": "all",
+      "clothing": "any",
+      "requirements": [
+        "Mandatory paid cool-down period of at least 10 minutes every 2 hours",
+        "Active observation of workers for signs and symptoms of heat illness",
+        "Effective communication and a designated emergency caller"
+      ],
+      "evidence_note": "Cool-down periods are paid time and must be scheduled, not merely permitted."
+    },
+    {
+      "id": "wa-extreme-100",
+      "name": "Extreme heat procedures",
+      "severity": "extreme",
+      "citation": "WAC 296-62-09547",
+      "op": ">=",
+      "value_f": 100,
+      "industries": "all",
+      "clothing": "any",
+      "requirements": [
+        "Mandatory paid cool-down period of at least 15 minutes every hour",
+        "Continued active observation and emergency readiness"
+      ],
+      "evidence_note": "Break frequency roughly doubles at this threshold."
+    }
+  ]
+}

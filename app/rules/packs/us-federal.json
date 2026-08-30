@@ -1,0 +1,45 @@
+{
+  "jurisdiction": "us-federal",
+  "name": "United States (no state heat standard)",
+  "citation": "OSH Act \u00a75(a)(1) General Duty Clause",
+  "source_url": "https://www.osha.gov/laws-regs/oshact/section5-duties",
+  "metric": "temp_f",
+  "metric_note": "There is no numeric federal heat threshold. The proposed federal rule (89 FR 70698, published 30 August 2024) has not been finalised. The values below are advisory screening levels drawn from OSHA and NIOSH guidance, NOT statutory triggers.",
+  "status": "advisory",
+  "verified_on": "2026-08-22",
+  "environment": "outdoor",
+  "year_round": true,
+  "legal_caveat": "Enforcement in these states runs through the General Duty Clause, which requires a workplace free from recognised hazards likely to cause death or serious harm. There is no bright-line temperature. Treat these entries as a risk screen, not a compliance test.",
+  "thresholds": [
+    {
+      "id": "fed-advisory-80",
+      "name": "Advisory: heat precautions warranted",
+      "severity": "advisory",
+      "citation": "OSHA-NIOSH heat guidance (non-binding)",
+      "op": ">=",
+      "value_f": 80,
+      "industries": "all",
+      "clothing": "any",
+      "requirements": [
+        "Provide water, rest and shade as a recognised-hazard control",
+        "Brief workers on heat illness signs and the reporting route"
+      ],
+      "evidence_note": "Advisory only. Documented because a General Duty Clause case turns on what the employer knew and did."
+    },
+    {
+      "id": "fed-advisory-95",
+      "name": "Advisory: elevated risk, document controls",
+      "severity": "advisory",
+      "citation": "OSHA-NIOSH heat guidance (non-binding)",
+      "op": ">=",
+      "value_f": 95,
+      "industries": "all",
+      "clothing": "any",
+      "requirements": [
+        "Increase rest frequency and observation",
+        "Record the controls actually applied, since the General Duty Clause is proved by conduct rather than by threshold"
+      ],
+      "evidence_note": "The contemporaneous record is the entire defence in a General Duty Clause matter."
+    }
+  ]
+}

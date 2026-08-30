@@ -1,0 +1,2176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scorched — Heat Safety Operations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --bg: #0F0F0F;
+      --surface: #1A1A1A;
+      --surface2: #222222;
+      --surface3: #2A2A2A;
+      --border: #2E2E2E;
+      --border2: #3A3A3A;
+      --text: #F0EEE8;
+      --text2: #A09E98;
+      --text3: #666460;
+      --accent: #FF4D00;
+      --accent-dim: rgba(255, 77, 0, .15);
+      --green: #22C55E;
+      --green-dim: rgba(34, 197, 94, .12);
+      --green-border: rgba(34, 197, 94, .3);
+      --amber: #F59E0B;
+      --amber-dim: rgba(245, 158, 11, .12);
+      --amber-border: rgba(245, 158, 11, .3);
+      --blue: #3B82F6;
+      --blue-dim: rgba(59, 130, 246, .12);
+      --blue-border: rgba(59, 130, 246, .3);
+      --red: #EF4444;
+      --red-dim: rgba(239, 68, 68, .12);
+      --red-border: rgba(239, 68, 68, .3);
+      --gray-dim: rgba(255, 255, 255, .06);
+      --gray-border: rgba(255, 255, 255, .12);
+      --sans: "DM Sans", system-ui, sans-serif;
+      --mono: "DM Mono", ui-monospace, monospace;
+      --r: 8px;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
+      overflow: hidden;
+    }
+
+    /* ── APP SHELL ── */
+    .app {
+      display: grid;
+      grid-template-rows: 52px 1fr;
+      height: 100vh;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      z-index: 200;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      flex-shrink: 0;
+    }
+
+    .logo-flame {
+      font-size: 18px;
+    }
+
+    .topbar-center {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .mode-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      transition: opacity .15s;
+    }
+
+    .mode-chip:hover {
+      opacity: .8;
+    }
+
+    .mode-chip.live {
+      background: var(--green-dim);
+      border: 1px solid var(--green-border);
+      color: var(--green);
+    }
+
+    .mode-chip.replay {
+      background: var(--amber-dim);
+      border: 1px solid var(--amber-border);
+      color: var(--amber);
+    }
+
+    .mode-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .mode-dot.pulse {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .4
+      }
+    }
+
+    .topbar-status {
+      font-size: 12px;
+      color: var(--text3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--r);
+      border: 1px solid var(--border2);
+      background: var(--surface2);
+      color: var(--text2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      transition: all .15s;
+    }
+
+    .btn-icon:hover {
+      background: var(--surface3);
+      color: var(--text);
+      border-color: var(--border2);
+    }
+
+    .btn-icon.active {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── MAIN LAYOUT ── */
+    .main {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── LEFT PANEL ── */
+    .panel {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: var(--bg);
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    .panel-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .ptab {
+      flex: 1;
+      padding: 10px 4px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text3);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all .15s;
+    }
+
+    .ptab:hover {
+      color: var(--text2);
+    }
+
+    .ptab.active {
+      color: var(--text);
+      border-bottom-color: var(--accent);
+    }
+
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border2) transparent;
+    }
+
+    /* ── SITES LIST ── */
+    .site-item {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background .1s;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .site-item:hover {
+      background: var(--surface);
+    }
+
+    .site-item.selected {
+      background: var(--surface2);
+    }
+
+    .site-dot-wrap {
+      padding-top: 3px;
+      flex-shrink: 0;
+    }
+
+    .site-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .site-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .site-name {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .site-meta {
+      font-size: 11px;
+      color: var(--text3);
+      margin-top: 1px;
+    }
+
+    .site-temp {
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--mono);
+      flex-shrink: 0;
+      padding-top: 1px;
+    }
+
+    .site-status-label {
+      font-size: 11px;
+      margin-top: 3px;
+    }
+
+    /* ── ADD SITE FORM ── */
+    .add-site-form {
+      padding: 14px;
+    }
+
+    .form-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-row {
+      margin-bottom: 10px;
+    }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .form-input,
+    .form-select {
+      width: 100%;
+      padding: 7px 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--r);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 13px;
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    .form-input:focus,
+    .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    .form-select option {
+      background: #222;
+    }
+
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 9px;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--r);
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: opacity .15s;
+    }
+
+    .btn-primary:hover {
+      opacity: .88;
+    }
+
+    .btn-primary:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .form-note {
+      font-size: 11px;
+      color: var(--text3);
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .map-pick-hint {
+      font-size: 11px;
+      color: var(--amber);
+      padding: 6px 10px;
+      background: var(--amber-dim);
+      border: 1px solid var(--amber-border);
+      border-radius: var(--r);
+      margin-bottom: 10px;
+    }
+
+    /* ── RULES PANEL ── */
+    .rules-list {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .rule-pack {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+
+    .rule-pack-header {
+      padding: 10px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .rule-pack-header:hover {
+      background: var(--surface2);
+    }
+
+    .rule-pack-name {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .rule-pack-jur {
+      font-size: 11px;
+      color: var(--text3);
+      font-family: var(--mono);
+      margin-top: 1px;
+    }
+
+    .rule-pack-chevron {
+      color: var(--text3);
+      font-size: 11px;
+      transition: transform .2s;
+    }
+
+    .rule-pack.open .rule-pack-chevron {
+      transform: rotate(90deg);
+    }
+
+    .rule-pack-body {
+      display: none;
+      border-top: 1px solid var(--border);
+      padding: 10px 12px;
+    }
+
+    .rule-pack.open .rule-pack-body {
+      display: block;
+    }
+
+    .rule-citation {
+      font-size: 11px;
+      color: var(--text3);
+      font-family: var(--mono);
+      margin-bottom: 10px;
+    }
+
+    .thresh-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .thresh-row:last-child {
+      border-bottom: none;
+    }
+
+    .thresh-sev {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .sev-extreme,
+    .sev-high_heat {
+      background: var(--red-dim);
+      color: var(--red);
+      border: 1px solid var(--red-border);
+    }
+
+    .sev-action {
+      background: var(--amber-dim);
+      color: var(--amber);
+      border: 1px solid var(--amber-border);
+    }
+
+    .sev-advisory {
+      background: var(--blue-dim);
+      color: var(--blue);
+      border: 1px solid var(--blue-border);
+    }
+
+    .sev-baseline {
+      background: var(--gray-dim);
+      color: var(--text2);
+      border: 1px solid var(--gray-border);
+    }
+
+    .thresh-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .thresh-name {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .thresh-val {
+      font-size: 11px;
+      color: var(--text3);
+      font-family: var(--mono);
+    }
+
+    .thresh-reqs {
+      font-size: 11px;
+      color: var(--text2);
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+
+    /* ── MODE SWITCHER ── */
+    .mode-panel {
+      padding: 14px;
+    }
+
+    .mode-option {
+      border: 1px solid var(--border2);
+      border-radius: var(--r);
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .mode-option:hover {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .mode-option.selected {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .mode-option-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .mode-option-desc {
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.4;
+    }
+
+    .mode-apply {
+      margin-top: 4px;
+    }
+
+    .mode-status {
+      font-size: 12px;
+      color: var(--text3);
+      margin-top: 10px;
+      padding: 8px 10px;
+      background: var(--surface);
+      border-radius: var(--r);
+      font-family: var(--mono);
+    }
+
+    /* ── MAP ── */
+    .map-wrap {
+      position: relative;
+      background: #111;
+      flex: 1;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .leaflet-container {
+      background: #0a0a0a !important;
+    }
+
+    /* custom heat markers */
+    .heat-marker {
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, .2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "DM Mono", monospace;
+      font-weight: 500;
+      font-size: 11px;
+      cursor: pointer;
+      transition: transform .2s;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, .5);
+    }
+
+    .heat-marker:hover {
+      transform: scale(1.15);
+    }
+
+    .heat-marker.sev-no_duty,
+    .heat-marker.sev-baseline {
+      background: rgba(34, 197, 94, .85);
+      color: #fff;
+      border-color: rgba(34, 197, 94, .5);
+    }
+
+    .heat-marker.sev-advisory {
+      background: rgba(59, 130, 246, .85);
+      color: #fff;
+      border-color: rgba(59, 130, 246, .5);
+    }
+
+    .heat-marker.sev-action {
+      background: rgba(245, 158, 11, .9);
+      color: #fff;
+      border-color: rgba(245, 158, 11, .6);
+    }
+
+    .heat-marker.sev-high_heat {
+      background: rgba(239, 68, 68, .9);
+      color: #fff;
+      border-color: rgba(239, 68, 68, .6);
+    }
+
+    .heat-marker.sev-extreme {
+      background: rgba(239, 68, 68, 1);
+      color: #fff;
+      border-color: #fff;
+      box-shadow: 0 0 20px rgba(239, 68, 68, .8);
+    }
+
+    .heat-marker.sev-unevaluable,
+    .heat-marker.sev-loading,
+    .heat-marker.sev-error {
+      background: rgba(100, 100, 96, .7);
+      color: var(--text2);
+    }
+
+    /* leaflet popup override */
+    .leaflet-popup-content-wrapper {
+      background: var(--surface2) !important;
+      border: 1px solid var(--border2) !important;
+      border-radius: 10px !important;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, .6) !important;
+      color: var(--text) !important;
+      font-family: var(--sans) !important;
+      padding: 0 !important;
+    }
+
+    .leaflet-popup-content {
+      margin: 0 !important;
+      width: auto !important;
+    }
+
+    .leaflet-popup-tip-container {
+      display: none;
+    }
+
+    .leaflet-popup-close-button {
+      color: var(--text3) !important;
+      top: 10px !important;
+      right: 12px !important;
+      font-size: 18px !important;
+    }
+
+    /* ── SITE DETAIL POPUP ── */
+    .popup-body {
+      padding: 14px 16px;
+      min-width: 260px;
+      max-width: 320px;
+    }
+
+    .popup-name {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 2px;
+      padding-right: 20px;
+    }
+
+    .popup-meta {
+      font-size: 11px;
+      color: var(--text3);
+      margin-bottom: 10px;
+    }
+
+    .popup-temp {
+      font-size: 32px;
+      font-weight: 700;
+      font-family: var(--mono);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .popup-observed {
+      font-size: 11px;
+      color: var(--text3);
+      font-family: var(--mono);
+      margin-bottom: 10px;
+    }
+
+    .popup-action {
+      padding: 8px 10px;
+      border-radius: var(--r);
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+
+    .popup-action-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 2px;
+    }
+
+    .popup-hits {
+      margin-bottom: 10px;
+    }
+
+    .popup-hit {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .popup-hit:last-child {
+      border-bottom: none;
+    }
+
+    .popup-hit-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .popup-del {
+      font-size: 11px;
+      color: var(--red);
+      cursor: pointer;
+      border: 1px solid var(--red-border);
+      background: var(--red-dim);
+      padding: 4px 10px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-top: 4px;
+    }
+
+    .popup-del:hover {
+      background: var(--red);
+      color: white;
+    }
+
+    /* ── DATA PROVENANCE GRID ── */
+    .prov-grid {
+      display: grid;
+      grid-template-columns: 76px 1fr;
+      gap: 3px 10px;
+      font-size: 11px;
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+    }
+
+    .prov-k {
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      font-weight: 600;
+    }
+
+    .prov-v {
+      color: var(--text2);
+      font-family: var(--mono);
+    }
+
+    /* ── MAP LEGEND ── */
+    .bm-switch {
+      display: flex;
+      gap: 0;
+      margin-top: 8px;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid var(--border2);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, .45);
+    }
+
+    .bm-btn {
+      background: rgba(26, 26, 26, .92);
+      color: var(--text3);
+      border: 0;
+      border-right: 1px solid var(--border2);
+      padding: 5px 9px;
+      font-size: 10px;
+      cursor: pointer;
+      font-family: var(--sans);
+      letter-spacing: .03em;
+    }
+
+    .bm-btn:last-child {
+      border-right: 0;
+    }
+
+    .bm-btn:hover {
+      color: var(--text1);
+    }
+
+    .bm-btn.bm-active {
+      background: var(--border2);
+      color: var(--text1);
+    }
+
+    .jur-box {
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid var(--border2);
+      border-left: 3px solid var(--green, #3fb950);
+      border-radius: 5px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      font-size: 11px;
+    }
+
+    .jur-box-warn {
+      border-left-color: var(--amber, #d9822b);
+    }
+
+    .jur-head {
+      font-family: var(--mono);
+      color: var(--text1);
+      margin-bottom: 3px;
+    }
+
+    .jur-why {
+      color: var(--text3);
+      line-height: 1.45;
+    }
+
+    .jur-warn {
+      color: var(--amber, #d9822b);
+      margin-top: 5px;
+      line-height: 1.45;
+    }
+
+    .auto-tag {
+      font-size: 9px;
+      background: var(--green, #3fb950);
+      color: #06210d;
+      border-radius: 3px;
+      padding: 1px 4px;
+      letter-spacing: .05em;
+      vertical-align: middle;
+    }
+
+    .site-filters {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border2);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .site-filters .form-input {
+      width: 100%;
+    }
+
+    .site-filter-note {
+      font-size: 10px;
+      color: var(--text3);
+      font-family: var(--mono);
+    }
+
+    .btn-analyze {
+      background: var(--border2);
+      color: var(--text2);
+      border: 1px solid var(--border2);
+      border-radius: 5px;
+      font-size: 10px;
+      padding: 5px 9px;
+      cursor: pointer;
+      white-space: nowrap;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .btn-analyze:hover {
+      background: var(--amber, #d9822b);
+      color: #111;
+      border-color: transparent;
+    }
+
+    .site-unver {
+      color: var(--text3);
+      font-family: var(--mono);
+      cursor: help;
+    }
+
+    .map-legend {
+      position: absolute;
+      bottom: 20px;
+      right: 12px;
+      z-index: 500;
+      background: rgba(26, 26, 26, .92);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border2);
+      border-radius: var(--r);
+      padding: 10px 12px;
+      font-size: 11px;
+    }
+
+    .legend-title {
+      font-weight: 700;
+      color: var(--text2);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      font-size: 10px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 0;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── OVERLAYS ── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .6);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .modal-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text3);
+      font-size: 20px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 4px;
+    }
+
+    .modal-close:hover {
+      color: var(--text);
+    }
+
+    .modal-body {
+      padding: 16px 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* ── TOASTS ── */
+    .toasts {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--r);
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      min-width: 220px;
+      text-align: center;
+      animation: toast-in .2s ease;
+      pointer-events: auto;
+    }
+
+    .toast.success {
+      border-color: var(--green-border);
+      color: var(--green);
+    }
+
+    .toast.error {
+      border-color: var(--red-border);
+      color: var(--red);
+    }
+
+    @keyframes toast-in {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    /* ── SITE DETAIL MODAL ── */
+    .detail-section {
+      margin-bottom: 18px;
+    }
+
+    .detail-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .temp-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .tbar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tbar-label {
+      font-size: 10px;
+      color: var(--text3);
+      font-family: var(--mono);
+      width: 32px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .tbar-track {
+      flex: 1;
+      height: 12px;
+      background: var(--surface3);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .tbar-fill {
+      height: 100%;
+      border-radius: 2px;
+    }
+
+    .tbar-fill.cold {
+      background: var(--blue);
+    }
+
+    .tbar-fill.warm {
+      background: var(--amber);
+    }
+
+    .tbar-fill.hot {
+      background: var(--red);
+    }
+
+    .tbar-val {
+      font-size: 10px;
+      color: var(--text2);
+      font-family: var(--mono);
+      width: 34px;
+      flex-shrink: 0;
+    }
+
+    .chain-entry {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .chain-entry:last-child {
+      border-bottom: none;
+    }
+
+    .chain-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+
+    .chain-kind {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .chain-when {
+      font-size: 10px;
+      color: var(--text3);
+      font-family: var(--mono);
+    }
+
+    .chain-body {
+      font-size: 11px;
+      color: var(--text2);
+    }
+
+    .chain-hash {
+      font-size: 9px;
+      color: var(--text3);
+      font-family: var(--mono);
+      margin-top: 2px;
+      word-break: break-all;
+    }
+
+    .integrity-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 10px;
+      border-radius: var(--r);
+      margin-bottom: 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .integrity-badge.ok {
+      background: var(--green-dim);
+      border: 1px solid var(--green-border);
+      color: var(--green);
+    }
+
+    .integrity-badge.bad {
+      background: var(--red-dim);
+      border: 1px solid var(--red-border);
+      color: var(--red);
+    }
+
+    .coverage-warn {
+      background: var(--blue-dim);
+      border: 1px solid var(--blue-border);
+      border-radius: var(--r);
+      padding: 10px 12px;
+      font-size: 12px;
+      color: var(--blue);
+    }
+
+    /* scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border2);
+      border-radius: 2px;
+    }
+
+    @media (max-width: 700px) {
+      .main {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        display: none;
+      }
+
+      .panel.mobile-open {
+        display: flex;
+        position: fixed;
+        inset: 52px 0 0;
+        z-index: 100;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="logo"><span class="logo-flame">🛡️</span> HeatShield</div>
+      <div class="topbar-center">
+        <div class="mode-chip replay" id="mode-chip" onclick="showPanel('mode')" title="Click to switch mode">
+          <div class="mode-dot" id="mode-dot"></div>
+          <span id="mode-label">Loading…</span>
+        </div>
+        <div class="topbar-status" id="topbar-status"></div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-icon" onclick="showPanel('sites')" title="Sites" id="tab-btn-sites">🏗</button>
+        <button class="btn-icon" onclick="showPanel('add')" title="Add site" id="tab-btn-add">＋</button>
+        <button class="btn-icon" onclick="showPanel('rules')" title="Rules" id="tab-btn-rules">📋</button>
+        <button class="btn-icon" onclick="scanNow()" title="Refresh now" id="btn-refresh">↺</button>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+      <!-- LEFT PANEL -->
+      <div class="panel" id="panel">
+        <div class="panel-tabs">
+          <div class="ptab active" id="ptab-sites" onclick="showPanel('sites')">Sites</div>
+          <div class="ptab" id="ptab-add" onclick="showPanel('add')">Add site</div>
+          <div class="ptab" id="ptab-rules" onclick="showPanel('rules')">Rules</div>
+          <div class="ptab" id="ptab-mode" onclick="showPanel('mode')">Mode</div>
+        </div>
+        <div class="panel-body" id="panel-body">
+          <div style="padding:20px;color:var(--text3);font-size:13px">Loading…</div>
+        </div>
+      </div>
+
+      <!-- MAP -->
+      <div class="map-wrap">
+        <div id="map"></div>
+        <div class="map-legend">
+          <div class="legend-title">Heat Status</div>
+          <div class="legend-row">
+            <div class="legend-dot" style="background:var(--green)"></div> Safe
+          </div>
+          <div class="legend-row">
+            <div class="legend-dot" style="background:var(--blue)"></div> Advisory
+          </div>
+          <div class="legend-row">
+            <div class="legend-dot" style="background:var(--amber)"></div> Action
+          </div>
+          <div class="legend-row">
+            <div class="legend-dot" style="background:var(--red)"></div> High heat
+          </div>
+          <div class="legend-row">
+            <div class="legend-dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div> Extreme
+          </div>
+          <div class="legend-row">
+            <div class="legend-dot" style="background:var(--text3)"></div> Not evaluable
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAIL MODAL -->
+  <div class="overlay" id="detail-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="detail-title">—</div>
+        <button class="modal-close" onclick="closeDetail()">✕</button>
+      </div>
+      <div class="modal-body" id="detail-body">Loading…</div>
+    </div>
+  </div>
+
+  <!-- TOASTS -->
+  <div class="toasts" id="toasts"></div>
+
+  <script>
+    // ── utils ──────────────────────────────────────────────────────────
+    const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const api = async (path, opts) => {
+      const r = await fetch(path, opts);
+      if (!r.ok) { const e = await r.text(); throw new Error(`${path} → ${r.status}: ${e}`); }
+      return r.json();
+    };
+    const fmtDt = iso => iso ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+    const fmtDate = iso => iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    // Full local timestamp with the zone spelled out, so a judge watching the demo
+    // knows exactly which clock the number is on.
+    const fmtFull = iso => iso ? new Date(iso).toLocaleString(undefined,
+      { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' }) : '—';
+    const fmtAgo = iso => {
+      if (!iso) return '';
+      const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+      if (s < 10) return 'just now';
+      if (s < 60) return `${Math.round(s)}s ago`;
+      if (s < 3600) return `${Math.round(s / 60)}m ago`;
+      if (s < 86400) return `${Math.round(s / 3600)}h ago`;
+      return `${Math.round(s / 86400)}d ago`;
+    };
+
+    function toast(msg, type = '') {
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.textContent = msg;
+      document.getElementById('toasts').appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+
+    // ── state ──────────────────────────────────────────────────────────
+    let ALL_SITES = [];
+    let ALL_STATUS = {};
+    let META = null;
+    let MAP = null;
+    let MARKERS = {};
+    let PICK_MODE = false;
+    let PICK_CB = null;
+    let CURRENT_PANEL = 'sites';
+    let MAP_PICKING = false;
+
+    // ── severity helpers ───────────────────────────────────────────────
+    const SEV_COLOR = {
+      no_duty: 'var(--green)', baseline: 'var(--green)', advisory: 'var(--blue)',
+      action: 'var(--amber)', high_heat: 'var(--red)', extreme: 'var(--red)',
+      unevaluable: 'var(--text3)', error: 'var(--text3)', loading: 'var(--text3)'
+    };
+    const SEV_LABEL = {
+      no_duty: 'Safe', baseline: 'Baseline', advisory: 'Advisory',
+      action: 'Action level', high_heat: 'High heat', extreme: 'EXTREME',
+      unevaluable: 'Not evaluable', error: 'Error', loading: 'Loading…'
+    };
+    const SEV_BOX = {
+      no_duty: { cls: 'ok', label: 'Conditions normal', text: 'No heat thresholds triggered. Maintain baseline controls.' },
+      baseline: { cls: 'ok', label: 'Baseline duties', text: 'Baseline heat controls apply. Keep monitoring.' },
+      advisory: { cls: 'info', label: 'Monitor closely', text: 'Conditions warrant extra attention. Ensure water, shade, and rest rotation are in place.' },
+      action: { cls: 'warn', label: 'Action controls required', text: 'Stage required water, shade and rest-rotation controls now. Supervisor must monitor workers.' },
+      high_heat: { cls: 'urgent', label: 'High-heat procedures — act now', text: 'Activate all high-heat controls. Move crews to recovery if any show symptoms. Log every action.' },
+      extreme: { cls: 'urgent', label: 'Stop work — extreme heat', text: 'Cease high-exertion work immediately. Move all exposed workers to cooling. Do not resume without supervisor clearance.' },
+      unevaluable: { cls: 'info', label: 'Cannot evaluate', text: 'This jurisdiction uses heat index which requires humidity data. Temperature alone is not sufficient — reporting this honestly rather than guessing.' },
+      error: { cls: 'neutral', label: 'Data error', text: 'Could not load status for this site.' }
+    };
+
+    function whatToDo(st) {
+      const sev = st?.status || 'error';
+      const cross = (st?.crossings || [])[0];
+      if (SEV_BOX[sev]) {
+        let { cls, label, text } = SEV_BOX[sev];
+        // Precedence bug lived here: `A && B && C || D || E` meant a baseline or
+        // advisory site with no upcoming crossing fell into this branch and threw
+        // on cross.lead_minutes, killing the whole detail render.
+        const quiet = ['no_duty', 'baseline', 'advisory'].includes(sev);
+        if (cross && !cross.confirmed && quiet) {
+          const h = Math.round((cross.lead_minutes || 0) / 60);
+          label = `Heads up — ${cross.name} in ~${h}h`;
+          text = `${cross.trigger_f}°F threshold expected. Stage controls before ${fmtDt(cross.expected_at_utc)}.`;
+          cls = 'warn';
+        }
+        return { cls, label, text };
+      }
+      return { cls: 'neutral', label: sev, text: '' };
+    }
+
+    // ── map init ───────────────────────────────────────────────────────
+    // Keyless basemaps only. CARTO's raster tiles began requiring an API key and
+    // now watermark unauthenticated requests, so nothing here touches cartocdn.
+    // Each of these serves tiles anonymously; no key, no account, no .env entry.
+    const BASEMAPS = [
+      {
+        id: 'dark', name: 'Dark',
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        attribution: 'Esri, HERE, Garmin, © OpenStreetMap contributors',
+        maxNativeZoom: 16
+      },
+      {
+        id: 'sat', name: 'Satellite',
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attribution: 'Esri, Maxar, Earthstar Geographics',
+        maxNativeZoom: 18
+      },
+      {
+        id: 'street', name: 'Street',
+        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '© OpenStreetMap contributors',
+        maxNativeZoom: 19
+      },
+    ];
+
+    let TILE_LAYER = null, BASEMAP_ID = 'dark', ATTRIB = null, TILE_FAILS = 0;
+
+    function setBasemap(id) {
+      const bm = BASEMAPS.find(b => b.id === id) || BASEMAPS[0];
+      BASEMAP_ID = bm.id;
+      TILE_FAILS = 0;
+      if (TILE_LAYER) MAP.removeLayer(TILE_LAYER);
+      TILE_LAYER = L.tileLayer(bm.url, {
+        maxZoom: 19,
+        maxNativeZoom: bm.maxNativeZoom,   // overzoom rather than showing blank tiles
+        attribution: bm.attribution,
+      });
+      // If a provider goes down mid-demo, fall through to OSM instead of a blank map.
+      TILE_LAYER.on('tileerror', () => {
+        TILE_FAILS++;
+        if (TILE_FAILS > 8 && BASEMAP_ID !== 'street') {
+          toast('Basemap unavailable — switching to OpenStreetMap', 'info');
+          setBasemap('street');
+        }
+      });
+      TILE_LAYER.addTo(MAP);
+      if (ATTRIB) ATTRIB.setPrefix('');
+      document.querySelectorAll('.bm-btn').forEach(el =>
+        el.classList.toggle('bm-active', el.dataset.bm === bm.id));
+    }
+
+    function initMap() {
+      MAP = L.map('map', { zoomControl: false, attributionControl: false }).setView([37.5, -119], 6);
+      ATTRIB = L.control.attribution({ position: 'bottomright', prefix: '' }).addTo(MAP);
+      setBasemap('dark');
+      L.control.zoom({ position: 'topright' }).addTo(MAP);
+
+      // Basemap switcher. Satellite is genuinely useful here — you can see whether
+      // a pin actually sits on the work zone.
+      const sw = L.control({ position: 'topright' });
+      sw.onAdd = () => {
+        const d = L.DomUtil.create('div', 'bm-switch');
+        d.innerHTML = BASEMAPS.map(b =>
+          `<button class="bm-btn ${b.id === BASEMAP_ID ? 'bm-active' : ''}" data-bm="${b.id}">${b.name}</button>`).join('');
+        L.DomEvent.disableClickPropagation(d);
+        d.addEventListener('click', e => {
+          const id = e.target?.dataset?.bm;
+          if (id) setBasemap(id);
+        });
+        return d;
+      };
+      sw.addTo(MAP);
+
+      MAP.on('click', e => {
+        if (MAP_PICKING && PICK_CB) {
+          PICK_CB(e.latlng.lat, e.latlng.lng);
+        }
+      });
+    }
+
+    function makeMarker(site, st) {
+      const sev = st?.status || 'loading';
+      const temp = st?.current_f != null ? `${st.current_f}°` : '…';
+      const size = sev === 'extreme' ? 52 : 44;
+
+      const icon = L.divIcon({
+        className: '',
+        html: `<div class="heat-marker sev-${sev}" style="width:${size}px;height:${size}px">${temp}</div>`,
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2],
+      });
+
+      const marker = L.marker([site.lat, site.lng], { icon }).addTo(MAP);
+      marker.on('click', () => openDetail(site.id));
+      return marker;
+    }
+
+    function updateMarker(site, st) {
+      if (MARKERS[site.id]) { MARKERS[site.id].remove(); }
+      MARKERS[site.id] = makeMarker(site, st);
+    }
+
+    function fitMapToSites() {
+      if (!ALL_SITES.length) return;
+      const bounds = L.latLngBounds(ALL_SITES.map(s => [s.lat, s.lng]));
+      MAP.fitBounds(bounds, { padding: [40, 40] });
+    }
+
+    // ── panel switching ───────────────────────────────────────────────
+    function showPanel(name) {
+      CURRENT_PANEL = name;
+      ['sites', 'add', 'rules', 'mode'].forEach(t => {
+        const tab = document.getElementById(`ptab-${t}`);
+        if (tab) tab.classList.toggle('active', t === name);
+      });
+      renderPanel();
+    }
+
+    function renderPanel() {
+      const body = document.getElementById('panel-body');
+      if (CURRENT_PANEL === 'sites') renderSitesList(body);
+      else if (CURRENT_PANEL === 'add') renderAddSite(body);
+      else if (CURRENT_PANEL === 'rules') renderRules(body);
+      else if (CURRENT_PANEL === 'mode') renderMode(body);
+    }
+
+    // ── sites list ────────────────────────────────────────────────────
+    let SITE_QUERY = '';
+    let SITE_STATE = '';
+    let ANALYZING = {};
+
+    function setSiteQuery(v) { SITE_QUERY = v.toLowerCase(); renderSitesList(document.getElementById('panel-body'), true); }
+    function setSiteState(v) { SITE_STATE = v; renderSitesList(document.getElementById('panel-body')); }
+
+    function renderSitesList(body, keepFocus) {
+      if (!ALL_SITES.length) {
+        body.innerHTML = `<div style="padding:20px;color:var(--text3);font-size:13px">No sites yet. Use "Add site" to add one.</div>`;
+        return;
+      }
+
+      const states = [...new Set(ALL_SITES.map(s => s.state).filter(Boolean))].sort();
+      const scanned = ALL_SITES.filter(s => ALL_STATUS[s.id]).length;
+
+      let list = ALL_SITES;
+      if (SITE_STATE) list = list.filter(s => s.state === SITE_STATE);
+      if (SITE_QUERY) list = list.filter(s =>
+        (s.name + ' ' + s.operator + ' ' + s.state + ' ' + s.industry).toLowerCase().includes(SITE_QUERY));
+
+      const order = ['extreme', 'high_heat', 'action', 'advisory', 'unevaluable', 'baseline', 'no_duty'];
+      const sorted = [...list].sort((a, b) => {
+        const ia = order.indexOf(ALL_STATUS[a.id]?.status), ib = order.indexOf(ALL_STATUS[b.id]?.status);
+        // Analyzed sites first, most severe at the top; unanalyzed keep file order.
+        if (ia === -1 && ib === -1) return 0;
+        if (ia === -1) return 1;
+        if (ib === -1) return -1;
+        return ia - ib;
+      });
+
+      const controls = `
+    <div class="site-filters">
+      <input class="form-input" id="site-search" placeholder="Search worksites…"
+             value="${esc(SITE_QUERY)}" oninput="setSiteQuery(this.value)" />
+      <select class="form-input" onchange="setSiteState(this.value)">
+        <option value="">All states (${ALL_SITES.length})</option>
+        ${states.map(st => `<option value="${esc(st)}" ${st === SITE_STATE ? 'selected' : ''}>${esc(st)} (${ALL_SITES.filter(s => s.state === st).length})</option>`).join('')}
+      </select>
+      <div class="site-filter-note">${scanned} of ${ALL_SITES.length} analyzed · each analysis costs 1 FortyGuard heatmap</div>
+    </div>`;
+
+      const rows = sorted.map(site => {
+        const st = ALL_STATUS[site.id];
+        const sev = st?.status;
+        const col = sev ? (SEV_COLOR[sev] || 'var(--text3)') : 'var(--text3)';
+        const label = sev ? (SEV_LABEL[sev] || sev) : 'Not analyzed';
+        const temp = st?.current_f != null ? `${st.current_f}°F` : '';
+        const busy = ANALYZING[site.id];
+        const right = busy
+          ? `<div class="site-temp" style="color:var(--text3);font-size:11px">…</div>`
+          : (temp
+            ? `<div class="site-temp" style="color:${col}">${temp}</div>`
+            : `<button class="btn-analyze" onclick="event.stopPropagation();analyzeSite('${esc(site.id)}')">Analyze</button>`);
+        return `<div class="site-item" onclick="selectSite('${esc(site.id)}')" data-id="${esc(site.id)}">
+      <div class="site-dot-wrap"><div class="site-dot" style="background:${col};${sev ? '' : 'opacity:.35'}"></div></div>
+      <div class="site-info">
+        <div class="site-name">${esc(site.name)}${site.verified ? '' : ' <span class="site-unver" title="Approximate centroid, not verified against project records">~</span>'}</div>
+        <div class="site-meta">${esc(site.state || '—')} · ${esc(site.jurisdiction.replace('us-', '').toUpperCase())} · ${esc(site.industry.replace(/_/g, ' '))}</div>
+        <div class="site-status-label" style="color:${col}">${esc(busy ? 'Analyzing…' : label)}${!busy && st?.fetched_utc ? ` <span style="color:var(--text3)">· fetched ${esc(fmtAgo(st.fetched_utc))}</span>` : ''
+          }</div>
+      </div>
+      ${right}
+    </div>`;
+      }).join('') || `<div style="padding:20px;color:var(--text3);font-size:13px">No worksites match that filter.</div>`;
+
+      body.innerHTML = controls + rows;
+      if (keepFocus) {
+        const el = document.getElementById('site-search');
+        if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+      }
+    }
+
+    function selectSite(id) {
+      const site = ALL_SITES.find(s => s.id === id);
+      if (!site) return;
+      MAP.flyTo([site.lat, site.lng], 13, { duration: 1 });
+      openDetail(id);
+    }
+
+    // ── add site form ─────────────────────────────────────────────────
+    let pickedLat = null, pickedLng = null, PICKED_LOC = null;
+
+    function renderAddSite(body) {
+      const packs = META?.rulepacks || [];
+      body.innerHTML = `
+  <div class="add-site-form">
+    <div class="form-title">🏗 Add new worksite</div>
+    ${MAP_PICKING ? `<div class="map-pick-hint">📍 Click on the map to set location, then fill in details</div>` : `<div class="map-pick-hint" style="cursor:pointer" onclick="startPick()">📍 Click here then pick location on map</div>`}
+    ${pickedLat != null ? `<div style="font-size:11px;color:var(--green);margin-bottom:8px;font-family:var(--mono)">✓ ${pickedLat.toFixed(4)}, ${pickedLng.toFixed(4)}</div>` : ''}
+    ${pickedLat != null && !PICKED_LOC ? `<div class="jur-box">Resolving jurisdiction…</div>` : ''}
+    ${PICKED_LOC ? `<div class="jur-box ${PICKED_LOC.resolved ? '' : 'jur-box-warn'}">
+        <div class="jur-head">${PICKED_LOC.state ? esc(PICKED_LOC.state_name) + ' · ' : ''}<b>${esc(PICKED_LOC.jurisdiction)}</b></div>
+        <div class="jur-why">${esc(PICKED_LOC.reason)}</div>
+        ${PICKED_LOC.warning ? `<div class="jur-warn">⚠ ${esc(PICKED_LOC.warning)}</div>` : ''}
+      </div>` : ''}
+    <div class="form-row">
+      <label class="form-label">Site name</label>
+      <input class="form-input" id="f-name" placeholder="e.g. Downtown construction pad A" />
+    </div>
+    <div class="form-row">
+      <label class="form-label">Operator / company</label>
+      <input class="form-input" id="f-operator" placeholder="e.g. Acme Construction" />
+    </div>
+    <div class="form-row-2">
+      <div>
+        <label class="form-label">Lat</label>
+        <input class="form-input" id="f-lat" type="number" step="any" placeholder="37.77" value="${pickedLat != null ? pickedLat.toFixed(5) : ''}" />
+      </div>
+      <div>
+        <label class="form-label">Lng</label>
+        <input class="form-input" id="f-lng" type="number" step="any" placeholder="-122.41" value="${pickedLng != null ? pickedLng.toFixed(5) : ''}" />
+      </div>
+    </div>
+    <div class="form-row-2">
+      <div>
+        <label class="form-label">Industry</label>
+        <select class="form-select" id="f-industry">
+          <option value="construction">Construction</option>
+          <option value="agriculture">Agriculture</option>
+          <option value="transportation">Transportation</option>
+          <option value="oil_and_gas">Oil & Gas</option>
+          <option value="manufacturing">Manufacturing</option>
+          <option value="landscaping">Landscaping</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Jurisdiction${PICKED_LOC ? ' <span class="auto-tag">auto</span>' : ''}</label>
+        <select class="form-select" id="f-jurisdiction">
+          ${packs.map(p => `<option value="${esc(p.jurisdiction)}" ${PICKED_LOC && PICKED_LOC.jurisdiction === p.jurisdiction ? 'selected' : ''}>${esc(p.name || p.jurisdiction)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-row-2">
+      <div>
+        <label class="form-label">Shift start</label>
+        <input class="form-input" id="f-shift-start" type="time" value="07:00" />
+      </div>
+      <div>
+        <label class="form-label">Shift end</label>
+        <input class="form-input" id="f-shift-end" type="time" value="17:00" />
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Supervisor ID (optional)</label>
+      <input class="form-input" id="f-supervisor" placeholder="e.g. john.smith" />
+    </div>
+    <div class="form-row">
+      <label class="form-label">Clothing</label>
+      <select class="form-select" id="f-clothing">
+        <option value="standard">Standard</option>
+        <option value="double_layer">Double layer</option>
+        <option value="non_breathing">Non-breathing</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="submitAddSite()" id="btn-add-site">Add worksite</button>
+    <div class="form-note">Site will appear on map within seconds after saving.</div>
+  </div>`;
+    }
+
+    function startPick() {
+      MAP_PICKING = true;
+      MAP.getContainer().style.cursor = 'crosshair';
+      PICK_CB = async (lat, lng) => {
+        pickedLat = lat; pickedLng = lng;
+        MAP_PICKING = false;
+        MAP.getContainer().style.cursor = '';
+        PICKED_LOC = null;
+        renderPanel();
+        // The pin decides which law applies, so resolve it rather than making the
+        // user pick a rulepack from a dropdown. Offline lookup, no quota cost.
+        try {
+          PICKED_LOC = await api(`/api/resolve?lat=${lat}&lng=${lng}`);
+        } catch (e) {
+          PICKED_LOC = null;
+        }
+        renderPanel();
+      };
+      toast('Click on the map to set the site location');
+    }
+
+    async function submitAddSite() {
+      const name = document.getElementById('f-name')?.value?.trim();
+      const lat = parseFloat(document.getElementById('f-lat')?.value);
+      const lng = parseFloat(document.getElementById('f-lng')?.value);
+      if (!name) { toast('Site name is required', 'error'); return; }
+      if (isNaN(lat) || isNaN(lng)) { toast('Latitude and longitude are required', 'error'); return; }
+      const btn = document.getElementById('btn-add-site');
+      if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+      try {
+        const body = {
+          name,
+          lat, lng,
+          operator: document.getElementById('f-operator')?.value?.trim() || '',
+          industry: document.getElementById('f-industry')?.value || 'construction',
+          jurisdiction: document.getElementById('f-jurisdiction')?.value || 'us-federal',
+          state: PICKED_LOC?.state || '',
+          timezone: PICKED_LOC?.timezone || undefined,
+          shift_start: document.getElementById('f-shift-start')?.value || '07:00',
+          shift_end: document.getElementById('f-shift-end')?.value || '17:00',
+          supervisor: document.getElementById('f-supervisor')?.value?.trim() || '',
+          clothing: document.getElementById('f-clothing')?.value || 'standard',
+        };
+        const site = await api('/api/sites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        ALL_SITES.push(site);
+        pickedLat = null; pickedLng = null; PICKED_LOC = null;
+        MAP_PICKING = false;
+        updateMarker(site, null);
+        toast(`${site.name} added`, 'success');
+        showPanel('sites');
+        MAP.flyTo([site.lat, site.lng], 13);
+        // fetch its status async
+        setTimeout(() => refreshSite(site.id), 1000);
+      } catch (e) {
+        toast('Failed to add site: ' + e.message, 'error');
+        if (btn) { btn.disabled = false; btn.textContent = 'Add worksite'; }
+      }
+    }
+
+    // ── rules panel ───────────────────────────────────────────────────
+    function renderRules(body) {
+      const packs = META?.rulepacks || [];
+      if (!packs.length) { body.innerHTML = `<div style="padding:20px;color:var(--text3)">No rulepacks loaded.</div>`; return; }
+      body.innerHTML = `<div class="rules-list">${packs.map(p => {
+        const thresholds = p.thresholds || [];
+        return `<div class="rule-pack" id="rp-${esc(p.jurisdiction)}">
+      <div class="rule-pack-header" onclick="toggleRulePack('${esc(p.jurisdiction)}')">
+        <div>
+          <div class="rule-pack-name">${esc(p.name || p.jurisdiction)}</div>
+          <div class="rule-pack-jur">${esc(p.jurisdiction)} · ${thresholds.length} thresholds</div>
+        </div>
+        <span class="rule-pack-chevron">▶</span>
+      </div>
+      <div class="rule-pack-body">
+        <div class="rule-citation">${esc(p.citation || '')}</div>
+        ${thresholds.map(t => `<div class="thresh-row">
+          <div class="thresh-sev sev-${esc(t.severity)}">${esc(t.severity.replace('_', ' '))}</div>
+          <div class="thresh-info">
+            <div class="thresh-name">${esc(t.name)}</div>
+            <div class="thresh-val">≥ ${t.value_f}°F</div>
+          </div>
+        </div>`).join('')}
+        ${p.coverage && !p.coverage.satisfiable ? `<div style="margin-top:8px;font-size:11px;color:var(--blue)">⚠ Requires ${esc(p.coverage.metric)} — needs humidity data</div>` : ''}
+      </div>
+    </div>`;
+      }).join('')}</div>`;
+    }
+
+    function toggleRulePack(jur) {
+      const el = document.getElementById(`rp-${jur}`);
+      if (el) el.classList.toggle('open');
+    }
+
+    // ── mode panel ────────────────────────────────────────────────────
+    function renderMode(body) {
+      const current = META?.mode || 'replay';
+      body.innerHTML = `
+  <div class="mode-panel">
+    <div class="form-title" style="margin-bottom:14px">Data mode</div>
+    <div class="mode-option ${current === 'live' ? 'selected' : ''}" onclick="selectMode('live')" id="mo-live">
+      <div class="mode-option-title">🟢 Live — FortyGuard API</div>
+      <div class="mode-option-desc">Fetches real worksite temperature data from the FortyGuard satellite/sensor network. Requires a valid API key in <code style="font-size:11px;background:var(--surface3);padding:1px 4px;border-radius:3px">.env</code>. Data is ≥3 days old per API availability window.</div>
+    </div>
+    <div class="mode-option ${current === 'replay' ? 'selected' : ''}" onclick="selectMode('replay')" id="mo-replay">
+      <div class="mode-option-title">🟡 Demo — Synthetic data</div>
+      <div class="mode-option-desc">Generates realistic synthetic temperatures without any API key or network. Useful for development, demos, and testing the evidence chain. All values are clearly labelled synthetic.</div>
+    </div>
+    <button class="btn-primary mode-apply" onclick="applyMode()" id="btn-apply-mode">Apply mode</button>
+    <div class="mode-status" id="mode-status">Current: <strong>${esc(current)}</strong></div>
+    <div class="form-note" style="margin-top:12px">To use live mode, add your key to <code style="font-size:11px">.env</code>:<br><code style="font-size:11px">FORTYGUARD_API_KEY=your_key_here</code></div>
+  </div>`;
+    }
+
+    let pendingMode = null;
+    function selectMode(mode) {
+      pendingMode = mode;
+      ['live', 'replay'].forEach(m => {
+        const el = document.getElementById(`mo-${m}`);
+        if (el) el.classList.toggle('selected', m === mode);
+      });
+    }
+    async function applyMode() {
+      if (!pendingMode) { toast('Select a mode first', 'error'); return; }
+      const btn = document.getElementById('btn-apply-mode');
+      if (btn) { btn.disabled = true; btn.textContent = 'Applying…'; }
+      try {
+        const result = await api('/api/mode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: pendingMode }) });
+        toast(`Switched to ${result.effective} mode`, 'success');
+        await reloadMeta();
+        updateModeChip();
+        renderPanel();
+        await refreshAll(true);
+      } catch (e) {
+        toast('Mode switch failed: ' + e.message, 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Apply mode'; }
+      }
+    }
+
+    // ── meta / mode chip ──────────────────────────────────────────────
+    async function reloadMeta() {
+      META = await api('/api/meta');
+    }
+
+    function updateModeChip() {
+      const isLive = !META?.replay;
+      const chip = document.getElementById('mode-chip');
+      const dot = document.getElementById('mode-dot');
+      const label = document.getElementById('mode-label');
+      chip.className = `mode-chip ${isLive ? 'live' : 'replay'}`;
+      dot.className = `mode-dot ${isLive ? 'pulse' : ''}`;
+      label.textContent = isLive ? 'Live — FortyGuard' : 'Demo mode';
+    }
+
+    function updateTopbarStatus() {
+      const statuses = Object.values(ALL_STATUS);
+      if (!statuses.length) return;
+      const urgent = statuses.filter(s => ['high_heat', 'extreme'].includes(s.status)).length;
+      const action = statuses.filter(s => s.status === 'action').length;
+      const s = document.getElementById('topbar-status');
+      let msg;
+      if (urgent) msg = `⚠ ${urgent} site${urgent > 1 ? 's' : ''} at high heat`;
+      else if (action) msg = `${action} site${action > 1 ? 's' : ''} at action level`;
+      else msg = `${statuses.length} sites monitored`;
+
+      // Most recent provider fetch across all analyzed sites.
+      const stamps = statuses.map(x => x.fetched_utc).filter(Boolean).sort();
+      const last = stamps[stamps.length - 1];
+      if (last) {
+        msg += ` · fetched ${fmtAgo(last)}`;
+        s.title = `Last FortyGuard fetch: ${fmtFull(last)}`;
+      }
+      s.textContent = msg;
+    }
+
+    // Keep the relative timestamps honest without re-rendering anything heavy.
+    setInterval(() => { if (Object.keys(ALL_STATUS).length) updateTopbarStatus(); }, 30000);
+
+    // ── site detail modal ─────────────────────────────────────────────
+    async function openDetail(siteId) {
+      const site = ALL_SITES.find(s => s.id === siteId);
+      if (!site) return;
+      const st = ALL_STATUS[siteId];
+      document.getElementById('detail-title').textContent = site.name;
+      document.getElementById('detail-overlay').classList.add('open');
+      // Never let a render fault leave the modal parked on the static "Loading…".
+      try {
+        renderDetailBody(site, st);
+      } catch (err) {
+        console.error('detail render failed', err);
+        document.getElementById('detail-body').innerHTML =
+          `<div class="detail-section"><div class="popup-action" style="background:var(--red-dim);border:1px solid var(--red-border)">
+         <div class="popup-action-label" style="color:var(--red)">Could not render this site</div>
+         <div style="font-size:12px;color:var(--text2)">${esc(err.message)}</div>
+       </div>
+       <div style="margin-top:8px"><span class="popup-del" style="color:var(--amber);border-color:var(--amber-border);background:var(--amber-dim)"
+         onclick="analyzeFromDetail('${esc(site.id)}')">Re-analyze this site</span></div></div>`;
+      }
+      if (st) loadDetailLedger(siteId);
+    }
+
+    // Analyze straight from the modal, then re-render it in place.
+    async function analyzeFromDetail(siteId) {
+      const body = document.getElementById('detail-body');
+      body.innerHTML = `<div style="color:var(--text3);font-size:13px;padding:8px 0">Querying FortyGuard…</div>`;
+      await analyzeSite(siteId);
+      const site = ALL_SITES.find(s => s.id === siteId);
+      const st = ALL_STATUS[siteId];
+      if (!site) return;
+      if (!st) {
+        body.innerHTML = `<div style="color:var(--red);font-size:13px">Analysis failed. Check the server log and try again.</div>`;
+        return;
+      }
+      try { renderDetailBody(site, st); loadDetailLedger(siteId); }
+      catch (err) { body.innerHTML = `<div style="color:var(--red);font-size:13px">${esc(err.message)}</div>`; }
+    }
+
+    function renderDetailBody(site, st) {
+      const body = document.getElementById('detail-body');
+      // No status yet means this site has never been analyzed. Say that plainly and
+      // offer the action, instead of a spinner that nothing will ever resolve.
+      if (!st) {
+        body.innerHTML = `
+      <div class="detail-section">
+        <div class="popup-action" style="background:var(--gray-dim);border:1px solid var(--gray-border)">
+          <div class="popup-action-label" style="color:var(--text2)">Not analyzed yet</div>
+          <div style="font-size:12px;color:var(--text2)">No temperature has been pulled for this worksite. Analyzing costs one FortyGuard heatmap from the daily quota.</div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:10px">
+          ${esc(site.state || '—')} · ${esc(site.jurisdiction)} · ${site.lat.toFixed(4)}, ${site.lng.toFixed(4)}
+        </div>
+        <button class="btn-primary" onclick="analyzeFromDetail('${esc(site.id)}')">Analyze this site</button>
+      </div>
+      <div style="margin-top:10px">
+        <span class="popup-del" onclick="deleteSite('${esc(site.id)}')">Remove this site</span>
+      </div>`;
+        return;
+      }
+      const sev = st.status;
+      const act = whatToDo(st);
+      const boxColors = { ok: 'var(--green-dim)', info: 'var(--blue-dim)', warn: 'var(--amber-dim)', urgent: 'var(--red-dim)', neutral: 'var(--gray-dim)' };
+      const boxBorders = { ok: 'var(--green-border)', info: 'var(--blue-border)', warn: 'var(--amber-border)', urgent: 'var(--red-border)', neutral: 'var(--gray-border)' };
+      const boxTextColors = { ok: 'var(--green)', info: 'var(--blue)', warn: 'var(--amber)', urgent: 'var(--red)', neutral: 'var(--text2)' };
+      const bc = boxColors[act.cls] || boxColors.neutral;
+      const bb = boxBorders[act.cls] || boxBorders.neutral;
+      const btc = boxTextColors[act.cls] || boxTextColors.neutral;
+
+      // Forecast chart
+      const forecast = st.forecast || [];
+      const maxT = Math.max(...forecast.map(r => r.temp_f), 1);
+      const chartHTML = forecast.slice(0, 13).map(r => {
+        const pct = Math.min(100, ((r.temp_f - 55) / Math.max(maxT - 55, 1)) * 100);
+        const cls = r.temp_f >= 95 ? 'hot' : r.temp_f >= 80 ? 'warm' : 'cold';
+        const hr = new Date(r.ts_utc).getUTCHours();
+        const ampm = hr >= 12 ? (hr === 12 ? '12p' : `${hr - 12}p`) : (hr === 0 ? '12a' : `${hr}a`);
+        return `<div class="tbar-row">
+      <div class="tbar-label">${ampm}</div>
+      <div class="tbar-track"><div class="tbar-fill ${cls}" style="width:${pct}%"></div></div>
+      <div class="tbar-val">${r.temp_f}°</div>
+    </div>`;
+      }).join('');
+
+      // Triggered thresholds
+      const hitsHTML = (st.hits || []).length ? `
+    <div class="detail-section">
+      <div class="detail-section-title">Triggered thresholds</div>
+      ${(st.hits || []).map(h => `<div class="thresh-row">
+        <div class="thresh-sev sev-${esc(h.severity)}">${esc(h.severity.replace('_', ' '))}</div>
+        <div class="thresh-info">
+          <div class="thresh-name">${esc(h.name)} — ≥${h.trigger_f}°F</div>
+          <div class="thresh-reqs">${(h.requirements || []).slice(0, 2).map(r => esc(r)).join(' · ')}</div>
+          <div class="thresh-val">${esc(h.citation)}</div>
+        </div>
+      </div>`).join('')}
+    </div>` : '';
+
+      // Crossings
+      const crosses = st.crossings || [];
+      const crossHTML = crosses.length ? `
+    <div class="detail-section">
+      <div class="detail-section-title">${crosses[0].confirmed ? 'Confirmed crossings' : 'Upcoming threshold crossings'}</div>
+      ${crosses.map(c => `<div class="thresh-row">
+        <div class="thresh-sev sev-${esc(c.severity)}">${esc(c.severity.replace('_', ' '))}</div>
+        <div class="thresh-info">
+          <div class="thresh-name">${esc(c.name)} — ${c.trigger_f}°F</div>
+          <div class="thresh-val">${c.confirmed ? 'Reached ' + fmtDt(c.expected_at_utc) : '~' + Math.round((c.lead_minutes || 0) / 60) + 'h · ' + fmtDt(c.expected_at_utc)}</div>
+        </div>
+      </div>`).join('')}
+    </div>` : '';
+
+      const isUnevaluable = sev === 'unevaluable';
+      const obsNote = st.provenance === 'historical' ? `Data from ${fmtDate(st.observed_utc)}` : fmtDt(st.observed_utc);
+
+      // Two clocks that must never be confused: when the temperature was measured,
+      // and when we pulled it. In live mode they sit ~3 days apart.
+      const fetchedLine = st.fetched_utc
+        ? `${fmtFull(st.fetched_utc)} · ${fmtAgo(st.fetched_utc)}${st.cached ? ' · served from cache' : ''}`
+        : 'not recorded';
+      const provHTML = `
+    <div class="prov-grid">
+      <div class="prov-k">Measured</div><div class="prov-v">${fmtFull(st.observed_utc)}</div>
+      <div class="prov-k">Fetched</div><div class="prov-v">${esc(fetchedLine)}</div>
+      <div class="prov-k">Source</div><div class="prov-v">${esc(st.source || '—')} · ${esc(st.provenance || '—')}</div>
+    </div>`;
+
+      body.innerHTML = `
+    <div class="detail-section">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px">
+        <div style="font-size:36px;font-weight:700;font-family:var(--mono);color:${SEV_COLOR[sev] || 'var(--text)'}">${!isUnevaluable && st.current_f ? st.current_f + '°F' : '—'}</div>
+        <div style="font-size:12px;color:var(--text3)">${esc(obsNote)}</div>
+      </div>
+      ${provHTML}
+      <div class="popup-action" style="background:${bc};border:1px solid ${bb}">
+        <div class="popup-action-label" style="color:${btc}">${esc(act.label)}</div>
+        <div style="font-size:12px;color:var(--text2)">${esc(act.text)}</div>
+      </div>
+      ${isUnevaluable ? `<div class="coverage-warn">⚠ ${esc(st.coverage?.note || 'Requires humidity data to evaluate heat index. Cannot assess compliance from temperature alone.')}</div>` : ''}
+    </div>
+    ${forecast.length && !isUnevaluable ? `<div class="detail-section">
+      <div class="detail-section-title">Temperature · shift window</div>
+      <div class="temp-bars">${chartHTML}</div>
+    </div>` : ''}
+    ${hitsHTML}
+    ${crossHTML}
+    <div class="detail-section" id="ledger-section-${esc(site.id)}">
+      <div class="detail-section-title">Evidence chain</div>
+      <div style="color:var(--text3);font-size:12px">Loading…</div>
+    </div>
+    <div style="margin-top:4px">
+      <span class="popup-del" onclick="deleteSite('${esc(site.id)}')">Remove this site</span>
+    </div>`;
+    }
+
+    async function loadDetailLedger(siteId) {
+      const el = document.getElementById(`ledger-section-${siteId}`);
+      if (!el) return;
+      try {
+        const [data, verify] = await Promise.all([
+          api(`/api/ledger?site_id=${siteId}&limit=8`),
+          api('/api/ledger/verify')
+        ]);
+        const ok = verify.ok;
+        const entries = data.entries || [];
+        el.innerHTML = `<div class="detail-section-title">Evidence chain</div>
+      <div class="integrity-badge ${ok ? 'ok' : 'bad'}">${ok ? '✓ Chain intact' : '✗ Chain broken'} · ${verify.entries || 0} entries</div>
+      ${entries.map(e => {
+          const p = e.payload || {};
+          let summary = '';
+          if (e.kind === 'STATUS_CHANGE') summary = `${esc(p.from)} → ${esc(p.to)} · ${p.temp_f || ''}°F`;
+          else if (e.kind === 'READING') summary = `${p.temp_f || ''}°F · ${esc(p.status || '')}`;
+          else if (e.kind === 'PRE_BREACH' || e.kind === 'CONFIRMED_CROSSING') summary = `${esc((p.forecast || {}).name || '')} at ${(p.forecast || {}).trigger_f || ''}°F`;
+          else if (e.kind === 'NOTICE_SENT') summary = `Alert sent`;
+          else if (e.kind === 'COVERAGE_GAP') summary = `Requires ${esc(p.metric_required || '')}`;
+          return `<div class="chain-entry">
+          <div class="chain-top"><span class="chain-kind" style="color:${SEV_COLOR[e.severity] || 'var(--text2)'}">${esc(e.kind)}</span><span class="chain-when">${fmtDt(e.ts_utc)}</span></div>
+          <div class="chain-body">${summary}</div>
+          <div class="chain-hash">↳ ${esc(e.entry_hash)}</div>
+        </div>`;
+        }).join('')}`;
+      } catch (err) {
+        const el2 = document.getElementById(`ledger-section-${siteId}`);
+        if (el2) el2.innerHTML = `<div class="detail-section-title">Evidence chain</div><div style="color:var(--text3);font-size:12px">Could not load: ${esc(err.message)}</div>`;
+      }
+    }
+
+    function closeDetail() { document.getElementById('detail-overlay').classList.remove('open'); }
+    document.getElementById('detail-overlay').addEventListener('click', e => { if (e.target === document.getElementById('detail-overlay')) closeDetail(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+    // ── delete site ───────────────────────────────────────────────────
+    async function deleteSite(siteId) {
+      if (!confirm('Remove this site? This cannot be undone.')) return;
+      try {
+        await api(`/api/sites/${siteId}`, { method: 'DELETE' });
+        ALL_SITES = ALL_SITES.filter(s => s.id !== siteId);
+        delete ALL_STATUS[siteId];
+        if (MARKERS[siteId]) { MARKERS[siteId].remove(); delete MARKERS[siteId]; }
+        closeDetail();
+        renderPanel();
+        toast('Site removed', 'success');
+      } catch (e) {
+        toast('Delete failed: ' + e.message, 'error');
+      }
+    }
+
+    // ── scan / refresh ────────────────────────────────────────────────
+    // One click, one site, one heatmap. This is the only path that spends quota.
+    async function analyzeSite(id) {
+      if (ANALYZING[id]) return;
+      ANALYZING[id] = true;
+      if (CURRENT_PANEL === 'sites') renderPanel();
+      try {
+        const st = await api(`/api/sites/${id}/analyze`, { method: 'POST' });
+        ALL_STATUS[id] = st;
+        const site = ALL_SITES.find(s => s.id === id);
+        if (site) updateMarker(site, st);
+        toast(`${site ? site.name : id}: ${st.current_f != null ? st.current_f + '°F' : 'no data'}`, 'success');
+      } catch (e) {
+        toast('Analysis failed: ' + e.message, 'error');
+      } finally {
+        ANALYZING[id] = false;
+        if (CURRENT_PANEL === 'sites') renderPanel();
+        updateTopbarStatus();
+      }
+    }
+
+    async function refreshSite(id) {
+      try {
+        const st = await api(`/api/sites/${id}/analyze`, { method: 'POST' });
+        ALL_STATUS[id] = st;
+        const site = ALL_SITES.find(s => s.id === id);
+        if (site) updateMarker(site, st);
+        if (CURRENT_PANEL === 'sites') renderPanel();
+        updateTopbarStatus();
+      } catch (e) { /* silent */ }
+    }
+
+    async function refreshAll(force = false) {
+      try {
+        // cached_only makes a refresh free. Scanning every site would cost one
+        // heatmap per site, which exceeds the daily quota on its own.
+        const statuses = await api(`/api/status${force ? '?force=true' : '?cached_only=true'}`);
+        statuses.forEach(st => { ALL_STATUS[st.site_id] = st; });
+        ALL_SITES.forEach(site => updateMarker(site, ALL_STATUS[site.id]));
+        if (CURRENT_PANEL === 'sites') renderPanel();
+        updateTopbarStatus();
+      } catch (e) { toast('Refresh failed: ' + e.message, 'error'); }
+    }
+
+    async function scanNow() {
+      const btn = document.getElementById('btn-refresh');
+      if (btn) { btn.textContent = '⟳'; btn.disabled = true; }
+      await refreshAll(false);      // free: reads the in-memory cache only
+      if (btn) { btn.textContent = '↺'; btn.disabled = false; }
+      const n = Object.keys(ALL_STATUS).length;
+      toast(n ? `Refreshed ${n} analyzed site${n > 1 ? 's' : ''}` : 'Nothing analyzed yet — pick a site and hit Analyze', n ? 'success' : 'info');
+    }
+
+    // ── boot ──────────────────────────────────────────────────────────
+    async function boot() {
+      initMap();
+      try {
+        [META, ALL_SITES] = await Promise.all([api('/api/meta'), api('/api/sites')]);
+      } catch (e) {
+        document.getElementById('panel-body').innerHTML = `<div style="padding:20px;color:var(--red)">Cannot reach server: ${esc(e.message)}</div>`;
+        return;
+      }
+
+      updateModeChip();
+
+      // Place skeleton markers immediately
+      ALL_SITES.forEach(site => updateMarker(site, null));
+      fitMapToSites();
+      renderPanel();
+
+      // Quota-safe boot: sites plus anything already in the cache. No FortyGuard call.
+      await refreshAll(false);
+      renderPanel();
+      updateTopbarStatus();
+    }
+
+    boot().catch(e => console.error('boot failed', e));
+  </script>
+</body>
+
+</html>

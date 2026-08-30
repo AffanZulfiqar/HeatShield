@@ -1,0 +1,49 @@
+{
+  "jurisdiction": "us-or",
+  "name": "Oregon (OR-OSHA)",
+  "citation": "OAR 437-002-0156 (general industry), OAR 437-004-1131 (agriculture)",
+  "source_url": "https://secure.sos.state.or.us/oard/viewSingleRule.action?ruleVrsnRsn=289425",
+  "metric": "heat_index_f",
+  "metric_note": "Oregon triggers on heat index (apparent temperature), which combines air temperature with relative humidity. A temperature-only feed CANNOT evaluate this pack. Scorched reports it as unsatisfiable rather than silently substituting ambient temperature, which would under-report every humid day.",
+  "requires_inputs": [
+    "relative_humidity_pct"
+  ],
+  "status": "verified",
+  "verified_on": "2026-08-22",
+  "environment": "indoor_or_outdoor",
+  "year_round": true,
+  "thresholds": [
+    {
+      "id": "or-0156-action",
+      "name": "Heat illness prevention duties",
+      "severity": "action",
+      "citation": "OAR 437-002-0156(1)",
+      "op": ">=",
+      "value_f": 80,
+      "industries": "all",
+      "clothing": "any",
+      "requirements": [
+        "At least one adequately shaded area, or equivalent alternative cooling where shade is not feasible",
+        "Free cool drinking water, kept between 35\u00b0F and 77\u00b0F, caffeine-free supplements only",
+        "Written heat illness prevention plan, emergency medical plan and acclimatisation plan"
+      ],
+      "evidence_note": "Applies indoors as well as outdoors. Exempt if a mechanical ventilation system holds the indoor heat index below 80\u00b0F."
+    },
+    {
+      "id": "or-0156-highheat",
+      "name": "High-heat practices and rest break schedule",
+      "severity": "high_heat",
+      "citation": "OAR 437-002-0156(5)",
+      "op": ">=",
+      "value_f": 90,
+      "industries": "all",
+      "clothing": "any",
+      "requirements": [
+        "Written rest break schedule in force for the portion of the shift at or above a 90\u00b0F heat index",
+        "Communication with lone workers, or a mandatory buddy system, or equivalent observation",
+        "Designated and equipped workers authorised to call emergency medical services"
+      ],
+      "evidence_note": "Rest break minimums escalate with the heat index. Confirm the current Appendix A table before relying on specific durations."
+    }
+  ]
+}

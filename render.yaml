@@ -1,0 +1,21 @@
+﻿services:
+  - type: web
+    name: heatshield
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATA_MODE
+        value: replay
+      - key: FORTYGUARD_API_KEY
+        value: ""
+      - key: POLL_ENABLED
+        value: "false"
+      - key: LOOKAHEAD_HOURS
+        value: "0"
+      - key: POLL_INTERVAL_S
+        value: "21600"
+      - key: NOTIFY_CONSOLE
+        value: "true"
+      - key: NWS_USER_AGENT
+        value: "HeatShield/0.1 (competition demo)"
