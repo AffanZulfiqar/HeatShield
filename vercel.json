@@ -1,0 +1,29 @@
+﻿{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "static/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.py"
+    }
+  ],
+  "env": {
+    "DATA_MODE": "replay",
+    "POLL_ENABLED": "false",
+    "LOOKAHEAD_HOURS": "0",
+    "NOTIFY_CONSOLE": "true"
+  }
+}

@@ -94,7 +94,10 @@ SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL", "").strip()
 NOTIFY_CONSOLE = _b("NOTIFY_CONSOLE", "true")
 
 # --- Storage ---------------------------------------------------------------
-DB_PATH = os.getenv("DB_PATH", str(ROOT / "scorched.db"))
+# On Vercel (and other serverless platforms) the filesystem is read-only
+# except for /tmp. Fall back to /tmp/scorched.db automatically.
+_default_db = "/tmp/scorched.db" if os.getenv("VERCEL") or os.getenv("VERCEL_ENV") else str(ROOT / "scorched.db")
+DB_PATH = os.getenv("DB_PATH", _default_db)
 
 # --- Station baseline ------------------------------------------------------
 # api.weather.gov is free, keyless, and gives the official observation station
